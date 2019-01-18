@@ -163,6 +163,21 @@ void ImageDataLayer<Dtype>::load_batch(Batch<Dtype>* batch) {
     }
   }
   batch_timer.Stop();
+  
+   static int sBatchId = 0;
+    char* batch_dump_dir = getenv("TENSORRT_INT8_BATCH_DIRECTORY");
+    char buffer[1000];
+    sprintf(buffer, "batches/batch%d", sBatchId++);
+    FILE* file = fopen(buffer, "w");
+    if(file==0)
+      abort();
+
+    int s[4] = { top_shape[0], top_shape[1], top_shape[2], top_shape[3] };
+    fwrite(s, sizeof(int), 4, file);
+    fwrite(prefetch_data, sizeof(float), top_shape[0]*top_shape[1]*top_shape[2]*top_shape[3], file);
+    fwrite(&prefetch_label[0], sizeof(int), top_shape[0], file);
+    fclose(file);
+
   DLOG(INFO) << "Prefetch batch: " << batch_timer.MilliSeconds() << " ms.";
   DLOG(INFO) << "     Read time: " << read_time / 1000 << " ms.";
   DLOG(INFO) << "Transform time: " << trans_time / 1000 << " ms.";
